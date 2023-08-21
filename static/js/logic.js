@@ -7,56 +7,55 @@ d3.json(url).then(function (data) {
     createFeatures(data.features);
 });
 
-//conditionals for marker style
-//radius reflects depth of quake, color gradient reflects magnitude
-// let Magnitude = data.feature.properties.mag;
-// let Depth = data.feature.geometry[2];
-
-for (let i=0; i < feature.length; i++) {
-    let markerColor = "";
-    if (properties.mag < 3){
-        color = "lightblue";
-    } else if (properties.mag < 4) {
-        color = "blue";
-    } else if (properties.mag >= 4) {
-        color = "darkblue";
-    }
-}
-for (let i=0; i < feature.length; i++) {
-    let markerRadius = "";
-    if (geometry[2] < 10) {
-        radius = 5;
-    } else if (geometry[2] < 30) {
-        radius = 10;
-    } else if (geometry[2] < 50) {
-        radius = 15;
-    } else if (geometry[2] < 70) {
-        radius = 20;
-    } else if (geometry[2] >= 100) {
-        radius = 25;
-    }
-}
-
-//define function, add Popups to display features
-function createFeatures(quakeData) {
-
-    //create feature function to call
-    function onEachFeature (feature, layer) {
-        let markerStyle = L.circleMarker([lat,lon], {
+//create function for marker layer
+function createFeatures(circleMarker) {
+    for (let i=0; i < features.length; i++) {
+        let markerStyle = {
             radius: markerRadius,
-            color: markerColor,
-            opacity: 0.5
-        });
-        markerStyle.bindPopup("<h1>Location: " +feature.properties.place + "</h1> <hr> <h3>Magnitude: " + feature.properties.mag + "</h3> <hr> <h3>Date: " + new Date(feature.properties.time) + "</h3>");
+            fillColor: markerColor,
+            color: white,
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.5
+        }.bindPopup("<h1>Location: " +features.properties.place + "</h1> <hr> <h3>Magnitude: " + features.properties.mag + "</h3> <hr> <h3>Date: " + new Date(features.properties.time) + "</h3>");
+
+        //conditionals for marker style
+        //radius reflects depth of quake, color gradient reflects magnitude
+
+        let magnitude = data.features.properties.mag;
+
+        let markerColor = "";
+        if (magnitude < 3){
+            color = "skyblue";
+        } else if (magnitude < 4) {
+            color = "steelblue";
+        } else if (magnitude >= 4) {
+            color = "navy";
+        }
+
+        let depth = data.features.geometry.coordinates[2];
+
+        let markerRadius = "";
+        if (depth < 10) {
+            radius = 5;
+        } else if (depth < 30) {
+            radius = 10;
+        } else if (depth < 50) {
+            radius = 15;
+        } else if (depth < 70) {
+            radius = 20;
+        } else if (depth >= 100) {
+            radius = 25;
+        }
     }
-    //create features array
-    let quakes = L.geoJSON(quakeData, {
-        style: markerStyle,
-        onEachFeature: onEachFeature
+    let earthquakes = L.geoJSON(circleMarker, {
+        pointToLayer: function (features, latlng) {
+            return L.circleMarker(latlng, markerStyle);
+        }
     });
-    //apply "quakes" layer to createMap
-    createMap(quakes);
+    createMap(earthquakes);
 }
+
 
 //create map and layers
 function createMap(quakes) {
@@ -74,13 +73,13 @@ function createMap(quakes) {
     };
     //establish overlay
     let overlayMaps = {
-        Earthquakes: quakes
+        Earthquakes: earthquakes
     };
     //establish Map
     let myMap = L.map("map", {
-        center: [98.5795,39.8283],
-        zoom: 5,
-        layers: [baseStreet, quakes]
+        center: [39,94],
+        zoom: 1,
+        layers: [baseStreet, earthquakes]
     });
     //layer control
     L.control.layers(baseMaps, overlayMaps, {
