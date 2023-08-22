@@ -15,6 +15,7 @@ let baseMaps = {
     "Topographical Map": baseTopo
 };
 
+//new layer group for marker layer
 let earthquakes = new L.LayerGroup();
 
 //establish overlay
@@ -25,7 +26,7 @@ let overlayMaps = {
 //establish Map
 let myMap = L.map("map", {
     center: [39, 28],
-    zoom: 1.5,
+    zoom: 1,
     layers: [baseStreet]
 });
 //layer control
@@ -33,6 +34,8 @@ L.control.layers(baseMaps, overlayMaps, {
     collapsed: false
 }).addTo(myMap);
 
+//conditional functions for marker styling
+//color reflects magnitude of quake, and radius reflects depth
 function markerColor(mag) {
     if (mag < 3) return "aliceblue";
     else if (mag <= 4) return "aquamarine";
@@ -47,9 +50,8 @@ function markerRadius(coordinates) {
     else if (coordinates >= 100) return 12;
 }
 
-
 //use get request with "then", send data to a function
-//
+//use pointToLayer and onEachFeature to create circle markers and styling, binding popup to markers
 d3.json(url).then(function (data) {
 
     L.geoJson(data, {
@@ -68,7 +70,6 @@ d3.json(url).then(function (data) {
                 fillOpacity: 0.75,
                 weight: 1
             };
-
         }
     }).addTo(earthquakes);
     earthquakes.addTo(myMap);
