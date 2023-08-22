@@ -2,88 +2,74 @@
 //All Magnitude 2.5+ Earthquakes within last 30 days
 const url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson"
 
-//use get request with "then", send data to a function
-d3.json(url).then(function (data) {
-    createFeatures(data.features);
+//establish base layers
+let baseStreet = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 });
+let baseTopo = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>'
+});
+//establish baseMaps for user to choose from
+let baseMaps = {
+    "Street Map": baseStreet,
+    "Topographical Map": baseTopo
+};
 
-//create function for marker layer
-function createFeatures(circleMarker) {
-    for (let i=0; i < features.length; i++) {
-        let markerStyle = {
-            radius: markerRadius,
-            fillColor: markerColor,
-            color: white,
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.5
-        }.bindPopup("<h1>Location: " +features.properties.place + "</h1> <hr> <h3>Magnitude: " + features.properties.mag + "</h3> <hr> <h3>Date: " + new Date(features.properties.time) + "</h3>");
+let earthquakes = new L.LayerGroup();
 
-        //conditionals for marker style
-        //radius reflects depth of quake, color gradient reflects magnitude
+//establish overlay
+let overlayMaps = {
+    Earthquakes: earthquakes
 
-        let magnitude = data.features.properties.mag;
+};
+//establish Map
+let myMap = L.map("map", {
+    center: [39, 28],
+    zoom: 1.5,
+    layers: [baseStreet]
+});
+//layer control
+L.control.layers(baseMaps, overlayMaps, {
+    collapsed: false
+}).addTo(myMap);
 
-        let markerColor = "";
-        if (magnitude < 3){
-            color = "skyblue";
-        } else if (magnitude < 4) {
-            color = "steelblue";
-        } else if (magnitude >= 4) {
-            color = "navy";
-        }
-
-        let depth = data.features.geometry.coordinates[2];
-
-        let markerRadius = "";
-        if (depth < 10) {
-            radius = 5;
-        } else if (depth < 30) {
-            radius = 10;
-        } else if (depth < 50) {
-            radius = 15;
-        } else if (depth < 70) {
-            radius = 20;
-        } else if (depth >= 100) {
-            radius = 25;
-        }
-    }
-    let earthquakes = L.geoJSON(circleMarker, {
-        pointToLayer: function (features, latlng) {
-            return L.circleMarker(latlng, markerStyle);
-        }
-    });
-    createMap(earthquakes);
+function markerColor(mag) {
+    if (mag < 3) return "aliceblue";
+    else if (mag <= 4) return "aquamarine";
+    else if (mag >= 4.1) return "cadetblue";
+    else if (mag >= 5.1) return "cornflowerblue";
+}
+function markerRadius(coordinates) {
+    if (coordinates < 10) return 4;
+    else if (coordinates < 30) return 6;
+    else if (coordinates < 50) return 8;
+    else if (coordinates < 70) return 10;
+    else if (coordinates >= 100) return 12;
 }
 
 
-//create map and layers
-function createMap(quakes) {
-    //establish base layers
-    let baseStreet = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-    let baseTopo = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>'
-    });
-    //establish baseMaps for user to choose from
-    let baseMaps = {
-        "Street Map": baseStreet,
-        "Topographical Map": baseTopo
-    };
-    //establish overlay
-    let overlayMaps = {
-        Earthquakes: earthquakes
-    };
-    //establish Map
-    let myMap = L.map("map", {
-        center: [39,94],
-        zoom: 1,
-        layers: [baseStreet, earthquakes]
-    });
-    //layer control
-    L.control.layers(baseMaps, overlayMaps, {
-        collapsed: false
-    }).addTo(myMap);
-}
+//use get request with "then", send data to a function
+//
+d3.json(url).then(function (data) {
 
+    L.geoJson(data, {
+        pointToLayer: function(feature, location) {
+            return L.circleMarker(location);
+        },
+        onEachFeature: function (feature, layer) {
+            layer.bindPopup(
+                "Location: " + feature.properties.place + "<br>Magnitude: " + feature.properties.mag + "<br>Depth: " + feature.geometry.coordinates[2])
+        },
+        style: function (feature) {
+            return {
+                radius: markerRadius(feature.geometry.coordinates[2]),
+                color: "white",
+                fillColor: markerColor(feature.properties.mag),
+                fillOpacity: 0.75,
+                weight: 1
+            };
+
+        }
+    }).addTo(earthquakes);
+    earthquakes.addTo(myMap);
+})
